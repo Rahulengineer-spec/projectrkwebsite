@@ -1,0 +1,107 @@
+// Mock data for development without database
+export const mockData = {
+  enrolledCourses: [
+    {
+      id: "1",
+      title: "Introduction to Programming",
+      progress: 75,
+      nextClass: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "John Smith",
+      totalLessons: 12,
+      completedLessons: 9,
+    },
+    {
+      id: "2",
+      title: "Web Development Fundamentals",
+      progress: 45,
+      nextClass: new Date(Date.now() + 48 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "Sarah Johnson",
+      totalLessons: 15,
+      completedLessons: 7,
+    },
+    {
+      id: "3",
+      title: "Database Design",
+      progress: 30,
+      nextClass: new Date(Date.now() + 72 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "Michael Brown",
+      totalLessons: 10,
+      completedLessons: 3,
+    },
+  ],
+  upcomingAssignments: [
+    {
+      id: "1",
+      title: "Final Project Submission",
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      course: "Web Development Fundamentals",
+      status: "pending",
+    },
+    {
+      id: "2",
+      title: "Database Schema Design",
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      course: "Database Design",
+      status: "pending",
+    },
+    {
+      id: "3",
+      title: "Programming Assignment 3",
+      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      course: "Introduction to Programming",
+      status: "pending",
+    },
+  ],
+  liveClasses: [
+    {
+      id: "1",
+      title: "Advanced JavaScript Concepts",
+      startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "John Smith",
+      status: "UPCOMING",
+    },
+    {
+      id: "2",
+      title: "Database Optimization",
+      startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "Michael Brown",
+      status: "UPCOMING",
+    },
+    {
+      id: "3",
+      title: "CSS Grid Layout",
+      startTime: new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleString(),
+      instructor: "Sarah Johnson",
+      status: "UPCOMING",
+    },
+  ],
+  notifications: [
+    {
+      id: "1",
+      title: "New Assignment Posted",
+      message: "A new assignment has been posted for Web Development Fundamentals",
+      type: "info",
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toLocaleDateString(),
+    },
+    {
+      id: "2",
+      title: "Live Class Reminder",
+      message: "Your next live class starts in 30 minutes",
+      type: "warning",
+      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toLocaleDateString(),
+    },
+    {
+      id: "3",
+      title: "Assignment Graded",
+      message: "Your Database Design assignment has been graded",
+      type: "success",
+      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toLocaleDateString(),
+    },
+  ],
+  stats: {
+    totalCourses: 3,
+    completedAssignments: 12,
+    averageGrade: 85,
+    streak: 5,
+  },
+}; 

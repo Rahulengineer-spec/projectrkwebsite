@@ -1,6 +1,10 @@
 import { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu"
 
 export const metadata: Metadata = {
   title: "Terms of Service | RK INSTITUTION",
@@ -91,42 +95,70 @@ const termsSections = [
 
 export default function TermsPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
-          <p className="text-xl text-muted-foreground">
-            Last updated: March 15, 2024
-          </p>
+    <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+      {/* Sidebar Navigation */}
+      <aside className="w-full md:w-1/4 mb-8 md:mb-0 sticky top-8 self-start z-10">
+        <nav>
+          <NavigationMenu>
+            <NavigationMenuList className="flex-col space-y-2 bg-white/70 dark:bg-background/70 backdrop-blur-md rounded-2xl shadow-lg p-4 border border-border">
+              {termsSections.map((section, idx) => (
+                <NavigationMenuItem key={section.title}>
+                  <NavigationMenuLink href={`#section${idx + 1}`}>{section.title.replace(/\d+\. /, '')}</NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+        </nav>
+      </aside>
+      {/* Main Content */}
+      <main className="flex-1">
+        <div className="flex items-center gap-4 mb-4">
+          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 via-emerald-500 to-yellow-400 bg-clip-text text-transparent animate-gradient">Terms of Service</h1>
+          <Badge variant="secondary">Last updated: March 15, 2024</Badge>
         </div>
-
-        <div className="prose prose-lg max-w-none">
-          <p className="text-muted-foreground mb-8">
-            Welcome to RK INSTITUTION. These Terms of Service govern your use of our website and services. Please read them carefully before using our platform.
-          </p>
-
-          {termsSections.map((section) => (
-            <div key={section.title} className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">{section.title}</h2>
-              <div className="space-y-4">
-                {section.content.map((paragraph, index) => (
-                  <p key={index} className="text-muted-foreground">
-                    {paragraph}
-                  </p>
+        <Alert className="mb-6 animate-fadeIn">
+          <AlertTitle>Summary</AlertTitle>
+          <AlertDescription>
+            Please read these terms carefully before using our services. They outline your rights, responsibilities, and important limitations.
+          </AlertDescription>
+        </Alert>
+        <div className="space-y-8">
+          {termsSections.map((section, idx) => (
+            <section id={`section${idx + 1}`} className="rounded-2xl bg-card/80 shadow-md p-6 transition-all duration-300 hover:shadow-xl scroll-mt-24 animate-fadeInUp mb-8" key={section.title}>
+              <h2 className="text-2xl font-bold mb-2">{section.title}</h2>
+              <ul className="list-disc ml-6">
+                {section.content.map((item, i) => (
+                  <li key={i}>{item}</li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
-
-          <div className="mt-12 rounded-lg border p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Questions?</h2>
-            <p className="text-muted-foreground mb-6">
-              If you have any questions about these terms, please contact our support team
-            </p>
-            <Button>Contact Support</Button>
-          </div>
         </div>
-      </div>
+        {/* FAQ Accordion */}
+        <div className="mt-10 animate-fadeInUp">
+          <h2 className="text-2xl font-semibold mb-4">Frequently Asked Questions</h2>
+          <Accordion type="single" collapsible>
+            <AccordionItem value="faq1">
+              <AccordionTrigger>Can I get a refund after enrolling in a course?</AccordionTrigger>
+              <AccordionContent>
+                Refunds are available within 30 days of purchase, subject to our refund policy. Please contact support for assistance.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq2">
+              <AccordionTrigger>What happens if my account is terminated?</AccordionTrigger>
+              <AccordionContent>
+                You will lose access to all course materials and services. Some terms may continue to apply after termination.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq3">
+              <AccordionTrigger>How is my personal information protected?</AccordionTrigger>
+              <AccordionContent>
+                Your data is protected as described in our Privacy Policy. We use security measures and never sell your information.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </main>
     </div>
   )
-} 
+}

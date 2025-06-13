@@ -1,29 +1,30 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { SiteHeader } from '@/components/site-header';
-import SupabaseProvider from '@/components/providers/supabase-provider';
 import { Suspense } from 'react';
 import Loading from '@/components/ui/loading';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { Footer } from '@/components/footer';
 import { cn } from '@/lib/utils';
+import { RootProvider } from '@/components/providers/root-provider';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://rkinstitution.com'),
+  metadataBase: new URL('https://your-domain.com'), // Replace with your actual domain
   title: {
-    default: 'RK INSTITUTION - Online Learning Platform',
-    template: '%s | RK INSTITUTION'
+    default: 'RK Institution - Transform Your Future',
+    template: '%s | RK Institution'
   },
-  description: 'Learn from the best instructors with our comprehensive online courses. Join thousands of students in their learning journey.',
-  keywords: ['online learning', 'education', 'courses', 'e-learning', 'online courses'],
-  authors: [{ name: 'RK INSTITUTION Team' }],
-  creator: 'RK INSTITUTION',
-  publisher: 'RK INSTITUTION',
+  description: 'Discover world-class education that combines innovation, technology, and excellence. Start your journey to success today with RK Institution.',
+  keywords: ['education', 'online learning', 'courses', 'technology', 'career development', 'RK Institution', 'higher education', 'professional development'],
+  authors: [{ name: 'RK Institution', url: 'https://your-domain.com' }],
+  creator: 'RK Institution',
+  publisher: 'RK Institution',
   formatDetection: {
     email: false,
     address: false,
@@ -32,25 +33,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://rkinstitution.com',
-    siteName: 'RK INSTITUTION',
-    title: 'RK INSTITUTION - Online Learning Platform',
-    description: 'Learn from the best instructors with our comprehensive online courses.',
+    url: 'https://your-domain.com',
+    title: 'RK Institution - Transform Your Future',
+    description: 'Discover world-class education that combines innovation, technology, and excellence.',
+    siteName: 'RK Institution',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/og-image.jpg', // Add your OG image
         width: 1200,
         height: 630,
-        alt: 'RK INSTITUTION Platform',
-      },
-    ],
+        alt: 'RK Institution - Transform Your Future'
+      }
+    ]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RK INSTITUTION - Online Learning Platform',
-    description: 'Learn from the best instructors with our comprehensive online courses.',
-    images: ['/twitter-image.jpg'],
-    creator: '@rkinstitution',
+    title: 'RK Institution - Transform Your Future',
+    description: 'Discover world-class education that combines innovation, technology, and excellence.',
+    creator: '@rkinstitution', // Replace with your Twitter handle
+    images: ['/twitter-image.jpg'], // Add your Twitter image
   },
   robots: {
     index: true,
@@ -64,7 +65,16 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-site-verification',
+    google: 'your-google-site-verification', // Add your Google verification code
+    yandex: 'your-yandex-verification', // Add if needed
+    bing: 'your-bing-verification', // Add if needed
+  },
+  alternates: {
+    canonical: 'https://your-domain.com',
+    languages: {
+      'en-US': 'https://your-domain.com',
+      // Add other language versions if available
+    },
   },
 };
 
@@ -74,41 +84,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
+        <link rel="alternate" type="application/rss+xml" href="/rss.xml" />
       </head>
       <body className={cn(
         inter.className,
-        "min-h-screen bg-background antialiased"
+        "min-h-screen bg-gradient-to-b from-background to-background/80 dark:from-background dark:to-background/80"
       )}>
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
-            <SupabaseProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                <div className="relative flex min-h-screen flex-col">
-                  <SiteHeader />
-                  <main className="flex-1">
-                    <div className="relative">
-                      <div className="absolute inset-0 -z-10 h-full w-full bg-white dark:bg-slate-950">
-                        <div className="absolute bottom-auto left-auto right-0 top-0 h-[500px] w-[500px] -translate-y-[30%] translate-x-[20%] rounded-full bg-primary/10 blur-[80px] dark:bg-primary/20" />
-                        <div className="absolute bottom-0 left-0 right-auto top-auto h-[500px] w-[500px] -translate-y-[30%] -translate-x-[20%] rounded-full bg-primary/10 blur-[80px] dark:bg-primary/20" />
-                      </div>
-                      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
-                        {children}
-                      </div>
-                    </div>
-                  </main>
-                  <Footer />
-                </div>
-              </ThemeProvider>
-            </SupabaseProvider>
+            <RootProvider>{children}</RootProvider>
           </Suspense>
-          <Toaster />
         </ErrorBoundary>
+        <Toaster />
       </body>
     </html>
   );

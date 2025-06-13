@@ -1,0 +1,354 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Calendar, BookOpen, FileText, Video, Bell, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
+import { fetchWithCsrf } from "@/lib/fetch";
+import { format } from "date-fns";
+
+interface DashboardData {
+  enrolledCourses: {
+    id: string;
+    title: string;
+    progress: number;
+    nextClass?: string;
+    instructor: string;
+  }[];
+  upcomingAssignments: {
+    id: string;
+    title: string;
+    dueDate: string;
+    course: string;
+    status: "pending" | "submitted" | "graded";
+  }[];
+  recentMaterials: {
+    id: string;
+    title: string;
+    type: string;
+    course: string;
+    uploadedAt: string;
+  }[];
+  liveClasses: {
+    id: string;
+    title: string;
+    startTime: string;
+    instructor: string;
+    status: "upcoming" | "live" | "completed";
+  }[];
+  notifications: {
+    id: string;
+    title: string;
+    message: string;
+    type: "info" | "warning" | "success";
+    createdAt: string;
+  }[];
+}
+
+export default function StudentDashboard() {
+  const [data, setData] = useState<DashboardData>({
+    enrolledCourses: [],
+    upcomingAssignments: [],
+    recentMaterials: [],
+    liveClasses: [],
+    notifications: [],
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetchWithCsrf("/api/student/dashboard");
+        if (response.ok) {
+          const dashboardData = await response.json();
+          setData(dashboardData);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header Section */}
+      <div className="border-b">
+        <div className="flex h-16 items-center px-6">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <div className="h-4 w-px bg-border" />
+            <nav className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Overview
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Courses
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Assignments
+              </Button>
+            </nav>
+          </div>
+          <div className="ml-auto flex items-center space-x-4">
+            <Button variant="outline" size="sm">
+              <Calendar className="w-4 h-4 mr-2" />
+              Calendar
+            </Button>
+            <Button size="sm">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Browse Courses
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="p-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="bg-card/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Enrolled Courses</p>
+                  <h2 className="text-2xl font-semibold mt-1">{data.enrolledCourses.length}</h2>
+                </div>
+                <BookOpen className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Assignments</p>
+                  <h2 className="text-2xl font-semibold mt-1">
+                    {data.upcomingAssignments.filter(a => a.status === "pending").length}
+                  </h2>
+                </div>
+                <FileText className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Live Classes</p>
+                  <h2 className="text-2xl font-semibold mt-1">
+                    {data.liveClasses.filter(c => c.status === "live").length}
+                  </h2>
+                </div>
+                <Video className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Notifications</p>
+                  <h2 className="text-2xl font-semibold mt-1">{data.notifications.length}</h2>
+                </div>
+                <Bell className="w-5 h-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left Column - Courses and Assignments */}
+          <div className="col-span-8 space-y-6">
+            {/* Enrolled Courses */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Your Courses</CardTitle>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.enrolledCourses.length > 0 ? (
+                    data.enrolledCourses.map((course) => (
+                      <div key={course.id} className="group flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                        <div className="space-y-1">
+                          <h3 className="font-medium group-hover:text-primary transition-colors">{course.title}</h3>
+                          <p className="text-sm text-muted-foreground">Instructor: {course.instructor}</p>
+                          <div className="flex items-center gap-2">
+                            <Progress value={course.progress} className="w-32 h-1.5" />
+                            <span className="text-sm text-muted-foreground">{course.progress}%</span>
+                          </div>
+                        </div>
+                        {course.nextClass && (
+                          <div className="text-right">
+                            <p className="text-sm font-medium">Next Class</p>
+                            <p className="text-sm text-muted-foreground">{course.nextClass}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No courses enrolled yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Assignments */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Upcoming Assignments</CardTitle>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.upcomingAssignments.length > 0 ? (
+                    data.upcomingAssignments.map((assignment) => (
+                      <div key={assignment.id} className="group flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                        <div className="space-y-1">
+                          <h3 className="font-medium group-hover:text-primary transition-colors">{assignment.title}</h3>
+                          <p className="text-sm text-muted-foreground">{assignment.course}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant={
+                            assignment.status === "pending" ? "secondary" :
+                            assignment.status === "submitted" ? "default" : "success"
+                          }>
+                            {assignment.status}
+                          </Badge>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">Due</p>
+                            <p className="text-sm text-muted-foreground">{assignment.dueDate}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No upcoming assignments.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Live Classes and Notifications */}
+          <div className="col-span-4 space-y-6">
+            {/* Live Classes */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Live Classes</CardTitle>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.liveClasses.length > 0 ? (
+                    data.liveClasses.map((class_) => (
+                      <div key={class_.id} className="group p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <h3 className="font-medium group-hover:text-primary transition-colors">{class_.title}</h3>
+                            <p className="text-sm text-muted-foreground">{class_.instructor}</p>
+                          </div>
+                          <Badge variant={
+                            class_.status === "live" ? "destructive" :
+                            class_.status === "upcoming" ? "default" : "secondary"
+                          }>
+                            {class_.status}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {class_.startTime}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No live classes scheduled.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Materials */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Recent Materials</CardTitle>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.recentMaterials.length > 0 ? (
+                    data.recentMaterials.map((material) => (
+                      <div key={material.id} className="group p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <h3 className="font-medium group-hover:text-primary transition-colors">{material.title}</h3>
+                            <p className="text-sm text-muted-foreground">{material.course}</p>
+                          </div>
+                          <Badge variant="outline">{material.type}</Badge>
+                        </div>
+                        <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {material.uploadedAt}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No recent materials.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notifications */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-base font-medium">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.notifications.length > 0 ? (
+                    data.notifications.map((notification) => (
+                      <div key={notification.id} className="group p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                        <div className="flex items-start gap-3">
+                          {notification.type === "success" ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : notification.type === "warning" ? (
+                            <AlertCircle className="w-5 h-5 text-yellow-500" />
+                          ) : (
+                            <Bell className="w-5 h-5 text-blue-500" />
+                          )}
+                          <div className="space-y-1">
+                            <h3 className="font-medium group-hover:text-primary transition-colors">{notification.title}</h3>
+                            <p className="text-sm text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">{notification.createdAt}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No new notifications.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+} 

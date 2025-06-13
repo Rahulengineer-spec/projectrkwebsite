@@ -1,0 +1,358 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User model for authentication and basic user info
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          UserRole  @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile information
+  profile       Profile?
+  
+  // Academic information
+  student       Student?
+  instructor    Instructor?
+  admin         Admin?
+
+  // Relationships
+  notifications Notification[]
+  messages      Message[]
+  forumPosts    ForumPost[]
+  forumReplies  ForumReply[]
+  notes         Note[]
+  bookmarks     Bookmark[]
+  attendance    Attendance[]
+  liveClassAttendance LiveClassAttendance[]
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+// Profile model for additional user information
+model Profile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar        String?
+  phone         String?
+  location      String?
+  timezone      String?
+  bio           String?
+  preferences   Json?     // Store user preferences as JSON
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Student model for student-specific information
+model Student {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId     String    @unique
+  enrollmentDate DateTime
+  program       String
+  level         String
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  courses       CourseEnrollment[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  attendance    Attendance[]
+  liveClassAttendance LiveClassAttendance[]
+}
+
+// Course model
+model Course {
+  id            String    @id @default(cuid())
+  title         String
+  code          String    @unique
+  description   String
+  instructorId  String
+  instructor    Instructor @relation(fields: [instructorId], references: [id])
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  enrollments   CourseEnrollment[]
+  materials     CourseMaterial[]
+  liveClasses   LiveClass[]
+  forumPosts    ForumPost[]
+  attendance    Attendance[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Course enrollment model
+model CourseEnrollment {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id])
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  status        EnrollmentStatus @default(ACTIVE)
+  progress      Int       @default(0)
+  enrolledAt    DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([studentId, courseId])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+// Course materials model
+model CourseMaterial {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  title         String
+  type          MaterialType
+  description   String
+  fileUrl       String?
+  fileSize      String?
+  format        String?
+  duration      String?
+  pages         Int?
+  tags          String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum MaterialType {
+  EBOOK
+  VIDEO
+  NOTE
+  ASSIGNMENT
+}
+
+// Live class model
+model LiveClass {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  title         String
+  description   String
+  startTime     DateTime
+  duration      String
+  type          ClassType
+  meetingLink   String?
+  status        ClassStatus @default(UPCOMING)
+  topics        String[]
+  recordingUrl  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  attendance    LiveClassAttendance[]
+}
+
+enum ClassType {
+  LECTURE
+  WORKSHOP
+  QA
+}
+
+enum ClassStatus {
+  UPCOMING
+  STARTING_SOON
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Live class attendance model
+model LiveClassAttendance {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id])
+  classId       String
+  liveClass     LiveClass @relation(fields: [classId], references: [id])
+  status        AttendanceStatus
+  joinTime      DateTime?
+  leaveTime     DateTime?
+  participationScore Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([studentId, classId])
+}
+
+// Forum post model
+model ForumPost {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  title         String
+  content       String
+  type          PostType
+  status        PostStatus @default(ACTIVE)
+  views         Int       @default(0)
+  likes         Int       @default(0)
+  isPinned      Boolean   @default(false)
+  tags          String[]
+  replies       ForumReply[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum PostType {
+  DISCUSSION
+  QUESTION
+  ANNOUNCEMENT
+}
+
+enum PostStatus {
+  ACTIVE
+  SOLVED
+  CLOSED
+}
+
+// Forum reply model
+model ForumReply {
+  id            String    @id @default(cuid())
+  postId        String
+  post          ForumPost @relation(fields: [postId], references: [id])
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  content       String
+  likes         Int       @default(0)
+  isAccepted    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Message model for chat
+model Message {
+  id            String    @id @default(cuid())
+  senderId      String
+  sender        User      @relation(fields: [senderId], references: [id])
+  content       String
+  status        MessageStatus @default(SENT)
+  attachments   Json?     // Store attachments as JSON
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+// Notification model
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  title         String
+  message       String
+  type          NotificationType
+  priority      Priority
+  isRead        Boolean   @default(false)
+  link          String?
+  courseId      String?
+  senderId      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  ANNOUNCEMENT
+  MESSAGE
+  ACHIEVEMENT
+  ALERT
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// Bookmark model
+model Bookmark {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  materialId    String
+  materialType  MaterialType
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, materialId])
+}
+
+// Note model
+model Note {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  title         String
+  content       String
+  type          NoteType
+  tags          String[]
+  fileUrl       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum NoteType {
+  LECTURE
+  SUMMARY
+  ASSIGNMENT
+}
+
+// Attendance model
+model Attendance {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id])
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  date          DateTime
+  status        AttendanceStatus
+  type          ClassType
+  duration      String
+  topic         String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+// Class model for organizing courses by class
+model Class {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique
+  description   String
+  level         String
+  courses       Course[]
+  students      Student[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+} 

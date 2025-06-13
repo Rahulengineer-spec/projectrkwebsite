@@ -1,399 +1,408 @@
 "use client"
 
-import { useState } from "react"
-import { Metadata } from "next"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Icons } from "@/components/icons"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { useTheme } from "next-themes"
+import { Sun, Moon } from "lucide-react"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
-export const metadata: Metadata = {
-  title: "Blog | RK INSTITUTION",
-  description: "Latest articles and insights from RK INSTITUTION",
+// Move metadata to separate file since we can't use metadata in client components
+
+// Mock data - Replace with actual data from your CMS or API
+const featuredPost = {
+    id: 1,
+  title: "The Future of Online Learning: AI and Personalized Education",
+  excerpt: "Discover how artificial intelligence is revolutionizing online education and creating personalized learning experiences for students worldwide.",
+  coverImage: "/images/blog/featured-post.jpg",
+  date: "2024-03-20",
+  author: {
+    name: "Dr. Sarah Johnson",
+    avatar: "/images/authors/sarah-johnson.jpg",
+    role: "Education Technology Expert"
+  },
+  category: "Education Technology",
+  readTime: "8 min read"
 }
 
-const blogPosts = [
-  {
-    id: 1,
-    title: "The Future of Education: How Technology is Transforming Learning",
-    excerpt: "Explore how emerging technologies like AI, VR, and adaptive learning are revolutionizing the way students learn and teachers teach.",
-    category: "Education Trends",
-    date: "March 15, 2024",
-    readTime: "5 min read",
-    image: "/blog/tech-education.jpg",
-    content: `In today's rapidly evolving educational landscape, technology plays a pivotal role in shaping how students learn and teachers teach. From artificial intelligence to virtual reality, these innovations are not just changing the tools we use but transforming the very nature of education.
-
-Key developments include:
-- AI-powered personalized learning paths that adapt to each student's pace and learning style
-- Virtual reality field trips and simulations that bring abstract concepts to life
-- Gamification of educational content to increase engagement and motivation
-- Real-time progress tracking and analytics for better performance monitoring
-- Collaborative online platforms that connect students globally
-- Interactive digital textbooks with multimedia content
-- Automated grading systems that provide instant feedback
-- Cloud-based learning management systems for seamless access
-
-These technologies are making education more accessible, engaging, and effective than ever before. Students can now learn at their own pace, access resources anytime, anywhere, and receive personalized support. Teachers benefit from data-driven insights and automated administrative tasks, allowing them to focus more on teaching and student interaction.
-
-The integration of technology in education also prepares students for the digital workforce, equipping them with essential 21st-century skills. As we move forward, the role of technology in education will only continue to grow, creating new opportunities for learning and teaching.`,
-  },
+const recentPosts = [
   {
     id: 2,
-    title: "Parent's Guide: Supporting Your Child's Online Learning Journey",
-    excerpt: "Practical tips and strategies for parents to help their children succeed in online education.",
-    category: "Parent Resources",
-    date: "March 10, 2024",
-    readTime: "4 min read",
-    image: "/blog/parent-guide.jpg",
-    content: `As online learning becomes increasingly prevalent, parents play a crucial role in their children's educational success. Here's a comprehensive guide to supporting your child's online learning journey:
-
-1. Create a Dedicated Learning Space
-- Set up a quiet, well-lit area for studying
-- Ensure reliable internet access and necessary devices
-- Minimize distractions and background noise
-- Provide comfortable seating and proper desk setup
-- Keep essential supplies within reach
-
-2. Establish a Routine
-- Set consistent study hours that align with your child's natural rhythm
-- Include regular breaks for physical activity and relaxation
-- Balance screen time with offline activities
-- Create a visual schedule or checklist
-- Set clear expectations for study time and breaks
-
-3. Stay Engaged
-- Monitor progress regularly through the learning platform
-- Communicate with teachers and attend virtual parent-teacher meetings
-- Celebrate achievements and milestones
-- Provide emotional support and encouragement
-- Help your child set realistic goals
-
-4. Technical Support
-- Learn the basics of the learning platform
-- Troubleshoot common technical issues
-- Ensure proper device maintenance
-- Teach your child basic tech troubleshooting
-- Keep software and security updates current
-
-5. Social and Emotional Support
-- Encourage virtual social interactions with classmates
-- Discuss any challenges or concerns openly
-- Promote a growth mindset
-- Help manage stress and anxiety
-- Foster independence while being available for support`,
+    title: "10 Essential Study Techniques for Online Learning Success",
+    excerpt: "Master these proven study techniques to excel in your online courses and achieve better academic results.",
+    coverImage: "/images/blog/study-techniques.jpg",
+    date: "2024-03-18",
+    category: "Study Tips",
+    readTime: "6 min read"
   },
   {
     id: 3,
-    title: "Study Smart: Effective Learning Strategies for Students",
-    excerpt: "Discover proven study techniques and time management skills to maximize learning efficiency.",
-    category: "Study Tips",
-    date: "March 5, 2024",
-    readTime: "6 min read",
-    image: "/blog/study-smart.jpg",
-    content: `Success in education isn't just about working hard—it's about working smart. Here are comprehensive learning strategies that can help you achieve better results:
-
-1. Active Learning Techniques
-- Practice retrieval through self-testing and flashcards
-- Teach concepts to others to reinforce understanding
-- Use mind maps and diagrams for visual learning
-- Create summary notes in your own words
-- Apply concepts to real-world scenarios
-- Participate in study groups and discussions
-- Use the Feynman technique to explain complex topics simply
-
-2. Time Management
-- Use the Pomodoro technique (25-minute focused sessions)
-- Create a detailed study schedule
-- Prioritize tasks using the Eisenhower matrix
-- Set SMART goals (Specific, Measurable, Achievable, Relevant, Time-bound)
-- Use digital tools for task management
-- Break large tasks into smaller, manageable chunks
-- Review and adjust your schedule weekly
-
-3. Memory Enhancement
-- Space out your study sessions (spaced repetition)
-- Use mnemonic devices and memory palaces
-- Connect new information to existing knowledge
-- Practice active recall regularly
-- Get adequate sleep for memory consolidation
-- Use multiple senses in learning
-- Review material just before sleep
-
-4. Exam Preparation
-- Start preparing well in advance
-- Create a study plan for each subject
-- Practice with past papers and mock exams
-- Focus on understanding rather than memorization
-- Use active learning techniques for revision
-- Take regular breaks to maintain focus
-- Stay physically active and maintain a healthy diet`,
+    title: "The Impact of AI in Modern Education",
+    excerpt: "Explore how artificial intelligence is transforming the educational landscape and enhancing learning experiences.",
+    coverImage: "/images/blog/ai-education.jpg",
+    date: "2024-03-15",
+    category: "Education Technology",
+    readTime: "7 min read"
   },
   {
     id: 4,
-    title: "Building a Growth Mindset: The Key to Academic Success",
-    excerpt: "Learn how developing a growth mindset can help students overcome challenges and achieve their full potential.",
-    category: "Student Success",
-    date: "February 28, 2024",
-    readTime: "5 min read",
-    image: "/blog/growth-mindset.jpg",
-    content: `A growth mindset is the belief that abilities can be developed through dedication and hard work. Here's how to cultivate it for academic success:
-
-1. Embrace Challenges
-- View difficulties as opportunities for growth
-- Learn from mistakes and failures
-- Persist through obstacles and setbacks
-- See effort as a path to mastery
-- Welcome constructive criticism
-- Take on increasingly difficult tasks
-- Celebrate progress, not just results
-
-2. Develop Resilience
-- Practice positive self-talk and affirmations
-- Set realistic, achievable goals
-- Break large goals into smaller steps
-- Maintain a problem-solving attitude
-- Learn stress management techniques
-- Build a support network
-- Practice gratitude and mindfulness
-
-3. Foster Curiosity
-- Ask questions and seek answers
-- Explore new subjects and interests
-- Seek feedback and use it constructively
-- Connect learning to personal interests
-- Read widely beyond required materials
-- Engage in discussions and debates
-- Take on new learning challenges
-
-4. Practical Applications
-- Apply growth mindset principles to daily study
-- Use setbacks as learning opportunities
-- Track progress and celebrate improvements
-- Share your learning journey with others
-- Help peers develop their growth mindset
-- Maintain a learning journal
-- Set regular reflection times`,
-  },
-  {
-    id: 5,
-    title: "Digital Wellbeing: Balancing Screen Time and Learning",
-    excerpt: "Tips for maintaining healthy digital habits while maximizing educational benefits.",
-    category: "Wellness",
-    date: "February 20, 2024",
-    readTime: "4 min read",
-    image: "/blog/digital-wellbeing.jpg",
-    content: `In our digital age, maintaining a healthy balance between screen time and other activities is crucial. Here's how to achieve digital wellbeing while maximizing learning:
-
-1. Set Boundaries
-- Designate screen-free times and zones
-- Create tech-free zones in your home
-- Use screen time tracking tools
-- Set specific time limits for different activities
-- Establish device-free meal times
-- Create a digital curfew before bedtime
-- Schedule regular digital detox periods
-
-2. Practice Digital Wellness
-- Take regular breaks using the 20-20-20 rule (every 20 minutes, look 20 feet away for 20 seconds)
-- Maintain good posture and ergonomics
-- Protect your eyes with proper lighting and screen settings
-- Use blue light filters in the evening
-- Keep devices at appropriate distances
-- Practice proper typing and mouse techniques
-- Stay hydrated and maintain good nutrition
-
-3. Stay Active
-- Schedule regular physical activity breaks
-- Practice mindfulness and meditation
-- Get adequate sleep (7-9 hours)
-- Engage in offline hobbies and interests
-- Spend time in nature
-- Practice deep breathing exercises
-- Maintain social connections offline
-
-4. Learning Optimization
-- Use productivity tools effectively
-- Create a distraction-free study environment
-- Practice focused, deep work sessions
-- Take regular movement breaks
-- Use technology mindfully for learning
-- Balance online and offline study methods
-- Maintain a healthy study-life balance`,
-  },
-  {
-    id: 6,
-    title: "Preparing for Exams: A Comprehensive Guide",
-    excerpt: "Expert tips and strategies for effective exam preparation and stress management.",
-    category: "Study Tips",
-    date: "February 15, 2024",
-    readTime: "5 min read",
-    image: "/blog/exam-prep.jpg",
-    content: `Effective exam preparation requires a combination of good study habits and stress management. Here's your comprehensive guide:
-
-1. Preparation Strategies
-- Create a detailed study schedule
-- Use active recall techniques
-- Practice with past papers
-- Make summary notes and mind maps
-- Teach concepts to others
-- Use spaced repetition
-- Create practice questions
-- Join study groups
-
-2. Stress Management
-- Practice relaxation techniques
-- Maintain a healthy routine
-- Get enough sleep
-- Exercise regularly
-- Eat a balanced diet
-- Practice mindfulness
-- Take regular breaks
-- Stay organized
-
-3. Exam Day Tips
-- Arrive early and prepared
-- Read questions carefully
-- Manage your time effectively
-- Answer easy questions first
-- Show your working
-- Review your answers
-- Stay calm and focused
-- Trust your preparation
-
-4. Post-Exam Review
-- Analyze your performance
-- Learn from mistakes
-- Celebrate your efforts
-- Plan improvements
-- Seek feedback
-- Maintain perspective
-- Set new goals
-- Continue learning`,
-  },
+    title: "Building a Successful Career in Tech",
+    excerpt: "Learn the essential skills and strategies needed to thrive in the ever-evolving technology industry.",
+    coverImage: "/images/blog/tech-career.jpg",
+    date: "2024-03-12",
+    category: "Career Development",
+    readTime: "5 min read"
+  }
 ]
 
 const categories = [
   "All Posts",
-  "Education Trends",
-  "Parent Resources",
+  "Education Technology",
   "Study Tips",
-  "Student Success",
-  "Wellness",
+  "Career Development",
+  "Student Life",
+  "Industry Insights"
 ]
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+}
 
 export default function BlogPage() {
   const [selectedCategory, setSelectedCategory] = useState("All Posts")
   const [searchQuery, setSearchQuery] = useState("")
-  const [expandedPostId, setExpandedPostId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const postsPerPage = 6
+  const [mounted, setMounted] = useState(false)
 
-  const filteredPosts = blogPosts.filter(post => {
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const filteredPosts = recentPosts.filter(post => {
     const matchesCategory = selectedCategory === "All Posts" || post.category === selectedCategory
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  const togglePostExpansion = (postId: number) => {
-    setExpandedPostId(expandedPostId === postId ? null : postId)
+  const paginatedPosts = filteredPosts.slice(
+    (currentPage - 1) * postsPerPage,
+    currentPage * postsPerPage
+  )
+
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+    setCurrentPage(1)
+  }
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category)
+    setCurrentPage(1)
+  }
+
+  if (!mounted) {
+    return null
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Blog</h1>
-          <p className="text-xl text-muted-foreground">
-            Insights, tips, and updates from the world of education
-          </p>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="flex-1">
-            <div className="relative">
-              <Icons.search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative py-20 bg-gradient-to-b from-primary/5 via-background to-background">
+        <div className="container relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl mx-auto text-center"
+          >
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+              Insights & Resources for Modern Learners
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8">
+              Discover the latest trends, tips, and insights in online education and professional development.
+            </p>
+            <div className="flex items-center max-w-md mx-auto">
+              <div className="relative flex-1">
               <Input
                 placeholder="Search articles..."
-                className="pl-10"
+                  className="rounded-l-full h-12 pl-12 pr-4 w-full focus-ring"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearch}
               />
+                <Icons.search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              </div>
+              <Button className="rounded-r-full h-12 px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300">
+                Search
+              </Button>
             </div>
+          </motion.div>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="absolute inset-0 bg-grid-primary/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+      </section>
+
+      {/* Categories */}
+      <section className="py-8 border-b">
+        <div className="container">
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="flex flex-wrap gap-3 justify-center"
+          >
             {categories.map((category) => (
+              <motion.div key={category} variants={item}>
               <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
+                  variant={category === selectedCategory ? "default" : "outline"}
                 className={cn(
-                  "whitespace-nowrap",
-                  selectedCategory === category && "bg-primary text-primary-foreground"
+                    "rounded-full transition-all duration-300",
+                    category === selectedCategory && "bg-gradient-to-r from-primary to-primary/90"
                 )}
-                onClick={() => setSelectedCategory(category)}
+                  onClick={() => handleCategoryChange(category)}
               >
                 {category}
               </Button>
+              </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Featured Post */}
+      <section className="py-16">
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h2 className="text-2xl font-bold mb-8 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Featured Article
+            </h2>
+            <Card gradient hover className="overflow-hidden">
+              <div className="grid md:grid-cols-2 gap-8 p-6">
+                <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
+                  <Image
+                    src={featuredPost.coverImage}
+                    alt={featuredPost.title}
+                    fill
+                    className="object-cover transition-transform hover:scale-105 duration-300"
+                    priority
+                  />
+                </div>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      {featuredPost.category}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">{featuredPost.readTime}</span>
+                  </div>
+                  <h3 className="text-3xl font-bold leading-tight hover:text-primary transition-colors">
+                    {featuredPost.title}
+                  </h3>
+                  <p className="text-lg text-muted-foreground">
+                    {featuredPost.excerpt}
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <Image
+                      src={featuredPost.author.avatar}
+                      alt={featuredPost.author.name}
+                      width={40}
+                      height={40}
+                      className="rounded-full ring-2 ring-primary/20"
+                    />
+                    <div>
+                      <p className="font-medium">{featuredPost.author.name}</p>
+                      <p className="text-sm text-muted-foreground">{featuredPost.author.role}</p>
+                    </div>
+                  </div>
+                  <Button className="rounded-full group" size="lg">
+                    Read Article
+                    <Icons.arrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Recent Posts Grid */}
+      <section className="py-16 bg-muted/30 dark:bg-muted/5">
+        <div className="container">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Recent Articles
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                className="rounded-full hover:bg-primary/10"
+              >
+                {theme === "light" ? (
+                  <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                ) : (
+                  <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                )}
+                <span className="sr-only">Toggle theme</span>
+              </Button>
           </div>
         </div>
 
-        {/* Blog Posts Grid */}
-        <div className="grid gap-8">
-          {filteredPosts.map((post) => (
-            <div key={post.id} className="rounded-lg border overflow-hidden">
-              <div className="aspect-video bg-muted" />
-              <div className="p-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <span>{post.category}</span>
-                  <span>•</span>
-                  <span>{post.date}</span>
-                  <span>•</span>
-                  <span>{post.readTime}</span>
-                </div>
-                <h2 className="text-2xl font-bold mb-2">{post.title}</h2>
-                <p className="text-muted-foreground mb-4">{post.excerpt}</p>
-                
-                {expandedPostId === post.id ? (
-                  <div className="space-y-4">
-                    <div className="prose max-w-none">
-                      {post.content.split('\n').map((paragraph, index) => (
-                        <p key={index} className="mb-4">{paragraph}</p>
-                      ))}
-                    </div>
+          {filteredPosts.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12"
+            >
+              <Icons.search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No articles found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filter to find what you&apos;re looking for.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+            >
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {paginatedPosts.map((post) => (
+                  <motion.div key={post.id} variants={item}>
+                    <Card hover className="h-full">
+                      <Link href={`/blog/${post.id}`}>
+                        <div className="relative aspect-[16/9] rounded-t-lg overflow-hidden">
+                          <Image
+                            src={post.coverImage}
+                  alt={post.title}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-105"
+                          />
+                        </div>
+                        <div className="p-6">
+                          <div className="flex items-center gap-4 mb-4">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                              {post.category}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">{post.readTime}</span>
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
+                            {post.title}
+                          </h3>
+                          <p className="text-muted-foreground line-clamp-3">
+                            {post.excerpt}
+                          </p>
+                        </div>
+                      </Link>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex justify-center mt-12 gap-2"
+                >
+                <Button
+                  variant="outline"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="rounded-full"
+                  >
+                    <Icons.arrowLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <Button
-                      variant="outline"
-                      onClick={() => togglePostExpansion(post.id)}
-                      className="mt-4"
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => handlePageChange(page)}
+                      className={cn(
+                        "rounded-full w-10 h-10 p-0",
+                        currentPage === page && "bg-gradient-to-r from-primary to-primary/90"
+                      )}
                     >
-                      Show Less
-                    </Button>
-                  </div>
-                ) : (
+                      {page}
+                </Button>
+                  ))}
                   <Button
                     variant="outline"
-                    onClick={() => togglePostExpansion(post.id)}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="rounded-full"
                   >
-                    Read More
+                    Next
+                    <Icons.arrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                )}
-              </div>
-            </div>
-          ))}
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </div>
+      </section>
 
-        {/* Newsletter Signup */}
-        <div className="mt-12 rounded-lg border p-8 text-center">
-          <h2 className="text-2xl font-bold mb-2">Stay Updated</h2>
-          <p className="text-muted-foreground mb-6">
-            Subscribe to our newsletter for the latest articles and updates
-          </p>
-          <div className="flex gap-2 max-w-md mx-auto">
-            <Input placeholder="Enter your email" />
-            <Button>Subscribe</Button>
-          </div>
+      {/* Newsletter Section */}
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl mx-auto text-center"
+          >
+            <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Stay Updated
+            </h2>
+            <p className="text-muted-foreground mb-8">
+              Get our latest articles, resources, and updates delivered to your inbox.
+            </p>
+            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <Input 
+                placeholder="Enter your email" 
+                type="email"
+                className="rounded-full h-12 focus-ring"
+                required
+              />
+              <Button type="submit" className="rounded-full h-12 px-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300">
+                Subscribe
+              </Button>
+          </form>
+          </motion.div>
         </div>
-      </div>
+      </section>
     </div>
   )
-} 
+}

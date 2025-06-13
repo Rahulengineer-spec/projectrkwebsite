@@ -1,11 +1,14 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useState, useContext } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Session, SupabaseClient } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase/client"
+import { Database } from "@/types/supabase"
 
-type SupabaseContext = {
-  supabase: SupabaseClient
+const supabase = createClientComponentClient<Database>()
+
+interface SupabaseContext {
+  supabase: SupabaseClient<Database>
   session: Session | null
 }
 
@@ -16,17 +19,23 @@ export default function SupabaseProvider({
 }: {
   children: React.ReactNode
 }) {
-  const [session, setSession] = useState<Session | null>(null)
-
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+  // Mock session for testing
+  const [session] = useState<Session | null>({
+    user: {
+      id: "test-user-id",
+      email: "test@example.com",
+      role: "admin",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    },
+    access_token: "mock-access-token",
+    refresh_token: "mock-refresh-token",
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+  } as Session)
 
   return (
     <Context.Provider value={{ supabase, session }}>

@@ -1,36 +1,57 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
+import { csrfMiddleware } from "@/lib/csrf"
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export const runtime = 'experimental-edge'
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+// List of paths that require CSRF protection
+const protectedPaths = [
+  '/api/auth/login',
+  '/api/auth/signup',
+  '/api/auth/reset-password',
+  '/api/profile',
+  '/api/blog',
+  '/api/admin',
+]
 
-  // If user is not signed in and the current path is not /login or /signup
-  // redirect the user to /login
-  if (!session && !['/login', '/signup', '/', '/about', '/courses', '/instructor', '/contact'].includes(req.nextUrl.pathname)) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/login'
-    return NextResponse.redirect(redirectUrl)
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+
+  // CORS headers
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-csrf-token",
+      },
+    })
   }
 
-  return res
+  // CSRF protection for non-GET methods
+  if (
+    request.method !== 'GET' &&
+    protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+  ) {
+    const csrfError = await csrfMiddleware(request)
+    if (csrfError) {
+      return csrfError
+    }
+  }
+
+  // Temporarily disable authentication for development
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    "/admin/:path*",
+    "/instructor/:path*",
+    "/dashboard/:path*",
+    "/api/:path*",
+    "/((?!api/csrf|_next/static|_next/image|favicon.ico|public).*)",
+    '/login',
+    '/register',
   ],
 } 

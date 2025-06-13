@@ -13,6 +13,7 @@ import {
   Video,
   Receipt,
 } from "lucide-react"
+import { CourseCard } from "@/components/Course/CourseCard"
 
 const items = [
   {

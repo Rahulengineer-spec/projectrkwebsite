@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,10 +12,28 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
-import { Clock, Users, BookOpen, Star, GraduationCap, Search, Filter, ChevronDown, X, ShoppingCart, Eye, Check, CheckCircle2 } from "lucide-react"
+import { 
+  Clock, 
+  Users, 
+  BookOpen, 
+  Star, 
+  GraduationCap, 
+  Filter, 
+  ChevronDown, 
+  X, 
+  ShoppingCart, 
+  Eye, 
+  Check, 
+  CheckCircle2, 
+  LayoutGrid, 
+  List, 
+  Search 
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import Script from 'next/script'
+import { Icons } from "@/components/icons"
+import { debounce } from "lodash"
 
 interface Course {
   id: string
@@ -45,6 +63,34 @@ interface Course {
   targetAudience: string[]
 }
 
+// Add metadata for SEO
+export const metadata = {
+  title: 'Browse Courses | RK Institution',
+  description: 'Explore our wide range of courses in development, data science, mathematics, and more.',
+};
+
+// Add loading state for course cards
+function CourseCardSkeleton() {
+  return (
+    <Card className="h-full animate-pulse">
+      <CardHeader>
+        <div className="h-48 bg-gray-200 rounded-md"></div>
+        <div className="h-6 w-3/4 bg-gray-200 rounded mt-4"></div>
+        <div className="h-4 w-1/2 bg-gray-200 rounded mt-2"></div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded"></div>
+          <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <div className="h-10 w-full bg-gray-200 rounded"></div>
+      </CardFooter>
+    </Card>
+  );
+}
+
 export default function CoursesPage() {
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
@@ -57,6 +103,9 @@ export default function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [purchaseStep, setPurchaseStep] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const [courses] = useState<Course[]>([
     {
@@ -387,53 +436,220 @@ export default function CoursesPage() {
     { id: "price-high", name: "Price: High to Low" },
   ]
 
-  // Filter and sort courses
+  // Simulate loading
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Enhanced filtering logic
   const filteredCourses = useMemo(() => {
-    let result = [...courses]
+    return courses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
+      const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;
+      const matchesPrice = course.price >= priceRange[0] && course.price <= priceRange[1];
+      const matchesTags = selectedTags.length === 0 || 
+                         selectedTags.every(tag => course.syllabus.includes(tag));
 
-    // Apply search filter
-    if (searchQuery) {
-      result = result.filter(course =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.description.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-    }
+      return matchesSearch && matchesCategory && matchesLevel && matchesPrice && matchesTags;
+    });
+  }, [courses, searchQuery, selectedCategory, selectedLevel, priceRange, selectedTags]);
 
-    // Apply category filter
-    if (selectedCategory !== "all") {
-      result = result.filter(course => course.category.toLowerCase() === selectedCategory)
-    }
+  // Enhanced sorting logic
+  const sortedCourses = useMemo(() => {
+    return [...filteredCourses].sort((a, b) => {
+      switch (sortBy) {
+        case 'popular':
+          return b.students - a.students;
+        case 'rating':
+          return b.rating - a.rating;
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'newest':
+          return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+        default:
+          return 0;
+      }
+    });
+  }, [filteredCourses, sortBy]);
 
-    // Apply level filter
-    if (selectedLevel !== "all") {
-      result = result.filter(course => course.level.toLowerCase() === selectedLevel)
-    }
+  // Enhanced search with debounce
+  const debouncedSearch = useCallback(
+    debounce((value: string) => setSearchQuery(value), 300),
+    []
+  );
 
-    // Apply price filter
-    result = result.filter(course => 
-      course.price >= priceRange[0] && course.price <= priceRange[1]
-    )
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSearch(e.target.value);
+  };
 
-    // Apply sorting
-    switch (sortBy) {
-      case "newest":
-        result.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
-        break
-      case "highest-rated":
-        result.sort((a, b) => b.rating - a.rating)
-        break
-      case "price-low":
-        result.sort((a, b) => a.price - b.price)
-        break
-      case "price-high":
-        result.sort((a, b) => b.price - a.price)
-        break
-      default: // popular
-        result.sort((a, b) => b.students - a.students)
-    }
+  // Enhanced filter panel
+  const FilterPanel = () => (
+    <div className="space-y-6 p-6 bg-card rounded-lg border">
+      <div>
+        <h3 className="font-semibold mb-4">Categories</h3>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {Array.from(new Set(courses.map(c => c.category))).map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-    return result
-  }, [courses, searchQuery, selectedCategory, selectedLevel, priceRange, sortBy])
+      <div>
+        <h3 className="font-semibold mb-4">Level</h3>
+        <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="Beginner">Beginner</SelectItem>
+            <SelectItem value="Intermediate">Intermediate</SelectItem>
+            <SelectItem value="Advanced">Advanced</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <h3 className="font-semibold mb-4">Price Range</h3>
+        <div className="space-y-4">
+          <Slider
+            value={priceRange}
+            min={0}
+            max={500}
+            step={10}
+            onValueChange={setPriceRange}
+            className="w-full"
+          />
+          <div className="flex justify-between text-sm">
+            <span>${priceRange[0]}</span>
+            <span>${priceRange[1]}</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold mb-4">Topics</h3>
+        <div className="space-y-2">
+          {Array.from(new Set(courses.flatMap(c => c.syllabus))).map(topic => (
+            <div key={topic} className="flex items-center">
+              <Checkbox
+                id={topic}
+                checked={selectedTags.includes(topic)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setSelectedTags([...selectedTags, topic]);
+                  } else {
+                    setSelectedTags(selectedTags.filter(t => t !== topic));
+                  }
+                }}
+              />
+              <label htmlFor={topic} className="ml-2 text-sm">
+                {topic}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Enhanced course card with responsive design
+  const CourseCard = ({ course }: { course: Course }) => (
+    <Card className={cn(
+      "h-full transition-all hover:shadow-lg",
+      viewMode === 'list' ? 'flex flex-row' : 'flex flex-col'
+    )}>
+      <div className={cn(
+        "relative",
+        viewMode === 'list' ? 'w-1/3' : 'w-full'
+      )}>
+        <img
+          src={course.image}
+          alt={course.title}
+          className="object-cover w-full h-48 rounded-t-lg"
+          loading="lazy"
+        />
+        {course.bestSeller && (
+          <Badge className="absolute top-2 right-2 bg-yellow-400 text-yellow-900">
+            Bestseller
+          </Badge>
+        )}
+      </div>
+
+      <div className="flex-1">
+        <CardHeader>
+          <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+          <CardDescription className="line-clamp-2">
+            {course.description}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2 text-sm">
+              <Star className="w-4 h-4 text-yellow-400" />
+              <span>{course.rating.toFixed(1)}</span>
+              <span>({course.students} students)</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm">
+              <Clock className="w-4 h-4" />
+              <span>{course.duration}</span>
+              <GraduationCap className="w-4 h-4 ml-2" />
+              <span>{course.level}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-bold">${course.price}</span>
+              {course.originalPrice && (
+                <span className="text-sm line-through text-muted-foreground">
+                  ${course.originalPrice}
+                </span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="space-x-2">
+          <Button
+            onClick={() => handleAddToCart(course)}
+            disabled={cart.some(c => c.id === course.id)}
+            className="flex-1"
+          >
+            {cart.some(c => c.id === course.id) ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                In Cart
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Add to Cart
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedCourse(course);
+              setShowPreview(true);
+            }}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </CardFooter>
+      </div>
+    </Card>
+  );
 
   const handleAddToCart = (course: Course) => {
     if (!cart.find(item => item.id === course.id)) {
@@ -512,301 +728,229 @@ export default function CoursesPage() {
   }
 
   return (
-    <>
+    <div className="container mx-auto px-4 py-8">
       <Script
         id="courses-structured-data"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       
-      {/* Hero Section */}
-      <div className="w-full py-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Find Your Perfect Course</h1>
-        <p className="text-xl text-muted-foreground max-w-[800px] mx-auto">
-          Learn from industry experts with practical, hands-on courses designed to boost your career.
-        </p>
-      </div>
-
-      {/* Search and Filter Section */}
-      <div className="w-full mb-8 px-4">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold mb-4 md:mb-0">Browse Courses</h1>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search for courses..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search courses..."
+              className="pl-10 w-[300px]"
+              onChange={handleSearch}
             />
           </div>
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-            <ChevronDown className={cn("h-4 w-4 transition-transform", showFilters && "rotate-180")} />
-          </Button>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <Card className="p-4 mb-4">
-            <div className="grid gap-6 md:grid-cols-3">
-              <div>
-                <h3 className="font-semibold mb-2">Categories</h3>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={category.id}
-                        checked={selectedCategory === category.id}
-                        onCheckedChange={() => setSelectedCategory(category.id)}
-                      />
-                      <Label htmlFor={category.id}>{category.name}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Level</h3>
-                <div className="space-y-2">
-                  {levels.map((level) => (
-                    <div key={level.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={level.id}
-                        checked={selectedLevel === level.id}
-                        onCheckedChange={() => setSelectedLevel(level.id)}
-                      />
-                      <Label htmlFor={level.id}>{level.name}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Price Range</h3>
-                <Slider
-                  value={priceRange}
-                  onValueChange={setPriceRange}
-                  max={200}
-                  step={10}
-                  className="mb-4"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
-      </div>
-
-      {/* Course Grid */}
-      <div className="w-full px-4">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="group hover:shadow-lg transition-all duration-300">
-              <div className="relative">
-                <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
-                  {/* Replace with actual image */}
-                  <div className="w-full h-full bg-primary/10" />
-                </div>
-                {course.bestSeller && (
-                  <Badge className="absolute top-2 left-2 bg-yellow-500 hover:bg-yellow-500">
-                    Bestseller
-                  </Badge>
-                )}
-              </div>
-              <CardHeader className="space-y-1">
-                <CardTitle className="line-clamp-2 text-lg">{course.title}</CardTitle>
-                <CardDescription className="line-clamp-2">{course.description}</CardDescription>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                    <span>{course.rating}</span>
-                  </div>
-                  <span className="text-muted-foreground">({course.students.toLocaleString()})</span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>{course.totalHours} total hours</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <BookOpen className="h-4 w-4" />
-                  <span>{course.lectures} lectures</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>{course.level}</span>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold">${course.price}</div>
-                  {course.originalPrice && (
-                    <div className="text-sm text-muted-foreground line-through">
-                      ${course.originalPrice}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => setSelectedCourse(course)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-5xl">
-                      <DialogHeader>
-                        <DialogTitle>Course Preview</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                          {course.previewVideo ? (
-                            <video
-                              src={course.previewVideo}
-                              controls
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-muted-foreground">Preview not available</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold">What you&apos;ll learn</h3>
-                          <ul className="grid grid-cols-2 gap-2">
-                            {course.whatYouWillLearn.map((item, index) => (
-                              <li key={index} className="flex items-start gap-2">
-                                <Check className="h-4 w-4 text-green-500 mt-1" />
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold">Requirements</h3>
-                          <ul className="space-y-2">
-                            {course.requirements.map((item, index) => (
-                              <li key={index} className="flex items-start gap-2">
-                                <span className="text-muted-foreground">•</span>
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold">Who this course is for</h3>
-                          <ul className="space-y-2">
-                            {course.targetAudience.map((item, index) => (
-                              <li key={index} className="flex items-start gap-2">
-                                <span className="text-muted-foreground">•</span>
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button size="sm" onClick={() => handleAddToCart(course)}>
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Cart and Purchase Flow */}
-      {cart.length > 0 && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="fixed bottom-4 right-4">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Cart ({cart.length})
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            className="md:hidden"
+            >
+            <Filter className="w-4 h-4 mr-2" />
+              Filters
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          </div>
+        </div>
+
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Filters - Desktop */}
+        <div className="hidden md:block w-64 flex-shrink-0">
+          <FilterPanel />
+                  </div>
+
+        {/* Filters - Mobile */}
+        <Dialog open={showFilters} onOpenChange={setShowFilters}>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Your Shopping Cart</DialogTitle>
+              <DialogTitle>Filter Courses</DialogTitle>
             </DialogHeader>
-            <div className="space-y-6">
-              {purchaseStep === 0 && (
-                <>
-                  <div className="space-y-4">
-                    {cart.map((course) => (
-                      <div key={course.id} className="flex items-start gap-4">
-                        <div className="w-24 h-16 bg-muted rounded-lg" />
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{course.title}</h3>
-                          <p className="text-sm text-muted-foreground">${course.price}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFromCart(course.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-xl font-bold">Total: ${totalPrice.toFixed(2)}</div>
-                    <Button onClick={handlePurchase}>Proceed to Checkout</Button>
-                  </div>
-                </>
-              )}
-              {purchaseStep === 1 && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Payment Information</h3>
-                    <div className="grid gap-4">
-                      <Input placeholder="Card Number" />
-                      <div className="grid grid-cols-2 gap-4">
-                        <Input placeholder="Expiry Date" />
-                        <Input placeholder="CVV" />
-                      </div>
-                    </div>
-                  </div>
-                  <Button onClick={handlePaymentComplete}>Complete Purchase</Button>
-                </div>
-              )}
-              {purchaseStep === 2 && (
-                <div className="text-center space-y-4">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-                  <h3 className="text-xl font-semibold">Purchase Complete!</h3>
+            <FilterPanel />
+          </DialogContent>
+        </Dialog>
+
+        {/* Course List */}
+        <div className="flex-1">
+          {/* Sort and View Controls */}
+          <div className="flex justify-between items-center mb-6">
+              <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                  <SelectItem value="price-low">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                </SelectContent>
+              </Select>
+
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+        {/* Course Grid */}
+          {isLoading ? (
+            <div className={cn(
+              "grid gap-6",
+              viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
+            )}>
+              {Array(6).fill(0).map((_, i) => (
+                <CourseCardSkeleton key={i} />
+              ))}
+              </div>
+          ) : (
+            <>
+              {sortedCourses.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">No courses found</h3>
                   <p className="text-muted-foreground">
-                    Thank you for your purchase. You can now access your courses in your dashboard.
+                    Try adjusting your search or filter criteria
                   </p>
-                  <Button>Go to Dashboard</Button>
+                </div>
+              ) : (
+                <div className={cn(
+                  "grid gap-6",
+                  viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
+                )}>
+                  {sortedCourses.map((course) => (
+                    <CourseCard key={course.id} course={course} />
+                  ))}
+                  </div>
+              )}
+            </>
+          )}
+                  </div>
+                  </div>
+
+      {/* Course Preview Dialog */}
+      {selectedCourse && (
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>{selectedCourse.title}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4">
+              {selectedCourse.previewVideo && (
+                <div className="aspect-video">
+                  <iframe
+                    src={selectedCourse.previewVideo}
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
                 </div>
               )}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">What you&apos;ll learn</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    {selectedCourse.whatYouWillLearn.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Prerequisites</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    {selectedCourse.prerequisites.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                  <Button
+                    onClick={() => {
+                    handleAddToCart(selectedCourse);
+                    setShowPreview(false);
+                  }}
+                  disabled={cart.some(c => c.id === selectedCourse.id)}
+                  className="w-full"
+                >
+                  {cart.some(c => c.id === selectedCourse.id) ? (
+                    'In Cart'
+                  ) : (
+                    'Add to Cart'
+                  )}
+                  </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
       )}
-    </>
+
+      {/* Shopping Cart */}
+      <Dialog open={purchaseStep > 0} onOpenChange={() => setPurchaseStep(0)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {purchaseStep === 1 ? 'Your Cart' : 'Complete Purchase'}
+            </DialogTitle>
+          </DialogHeader>
+          {purchaseStep === 1 ? (
+            <div className="space-y-4">
+              {cart.map((course) => (
+                <div key={course.id} className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-semibold">{course.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      ${course.price}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFromCart(course.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="pt-4 border-t">
+                <div className="flex justify-between font-semibold">
+                  <span>Total:</span>
+                  <span>
+                    ${cart.reduce((sum, course) => sum + course.price, 0).toFixed(2)}
+                  </span>
+                </div>
+        </div>
+              <Button
+                onClick={() => setPurchaseStep(2)}
+                className="w-full"
+                disabled={cart.length === 0}
+              >
+                Proceed to Checkout
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center">
+                <Icons.spinner className="mx-auto h-8 w-8 animate-spin" />
+                <p className="mt-2">Processing your purchase...</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

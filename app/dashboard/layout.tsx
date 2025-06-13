@@ -1,6 +1,3 @@
-import { redirect } from "next/navigation"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { DashboardNav } from "@/components/dashboard/nav"
 
 export default async function DashboardLayout({
@@ -8,13 +5,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createServerComponentClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
-    redirect("/auth/login")
-  }
-
   return (
     <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
       <aside className="hidden w-[200px] flex-col md:flex">
